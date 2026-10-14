@@ -1,0 +1,24 @@
+# Áudio e features
+librosa>=0.11
+numpy>=2.1
+scipy>=1.14
+soundfile>=0.12  # leitura de WAV/MP3 e escrita dos sinais sintéticos
+
+# Pré-visualização em tempo real
+pygame>=2.6
+
+# Exportação em vídeo (imageio-ffmpeg já traz um binário do ffmpeg)
+imageio>=2.35
+imageio-ffmpeg>=0.5
+
+# Configuração
+PyYAML>=6.0
+
+# Análise e avaliação
+matplotlib>=3.9
+pandas>=2.2
+scikit-learn>=1.5
+jupyterlab>=4.2
+
+# Testes
+pytest>=8.0

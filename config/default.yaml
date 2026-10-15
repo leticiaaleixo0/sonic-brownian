@@ -1,0 +1,19 @@
+# Parâmetros globais do projeto, compartilhados por todos os módulos de src/.
+#
+# Cada quadro de vídeo corresponde a exatamente uma coluna de features:
+#   hop_length = sample_rate / fps = 22050 / 30 = 735 amostras
+
+# Áudio
+sample_rate: 22050         # Hz; todo arquivo é reamostrado para esta taxa
+hop_length: 735            # amostras entre colunas de features
+n_fft: 2048                # janela da STFT (~93 ms)
+
+# Vídeo
+fps: 30
+width: 1920
+height: 1080
+
+# Simulação
+n_particles_preview: 5000
+n_particles_export: 50000
+seed: 0                    # semente fixa: o mesmo áudio gera sempre o mesmo vídeo

@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Cache de features (recalculável a partir dos áudios)
+data/cache/

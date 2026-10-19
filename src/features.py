@@ -38,6 +38,8 @@ DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache"
 NON_FRAME_KEYS = ("beat_frames", "tempo_bpm")
 
 
+# Features extraction:
+
 def extract_features(audio_path, config=None):
     config = config or load_config()
     y, sr = librosa.load(audio_path, sr=config.sample_rate, mono=True)
@@ -119,6 +121,65 @@ def load_features(audio_path, config=None, cache_dir=DEFAULT_CACHE_DIR, force=Fa
     _write_cache(path, features, key)
     return features
 
+# ------------------------------- Normalization and softening of the features -------------------------------
+
+# Volume and energy are perceived on a log scale, so they are normalized in dB
+DB_FEATURES = {"rms": 20, "low_energy": 10, "mid_energy": 10, "high_energy": 10}
+
+# A 5–95% range smaller than this fraction of the feature's magnitude counts as constant.
+# Without it, a steady tone would have its tiny fluctuations stretched over [0, 1].
+MIN_RELATIVE_RANGE = 0.05
+
+# Onsets are instants: smoothing would spread and delay each attack
+NOT_SMOOTHED = ("onset_strength",)
+
+
+# defining functions to normalize and soften the features
+
+def normalize_features(extracted_features):
+    """ Normalize each feature to the range [0, 1] using the 5th and 95th percentiles. """
+    normalized_features = {}
+    for name, values in extracted_features.items():
+        # Chroma already comes in [0, 1] per frame, and the balance between the 12 notes is what defines the color
+        if name in NON_FRAME_KEYS or name.startswith("chroma_"):
+            normalized_features[name] = values
+            continue
+
+        if name in DB_FEATURES:
+            values = DB_FEATURES[name] * np.log10(values + 1e-10) # normalize in dB, adding a small value to avoid log(0)
+
+        p5, p95 = np.percentile(values, [5, 95])
+        span = max(p95 - p5, MIN_RELATIVE_RANGE * max(abs(p5), abs(p95)))
+        if span == 0:
+            normalized_features[name] = np.zeros_like(values)
+        else:
+            normalized_features[name] = np.clip((values - p5) / span, 0, 1)
+    return normalized_features
+
+
+"""
+The features extracted from the audio changes 30 times per second (fps). 
+To avoid abrupt changes in the visualization, we apply a softening filter to the features.
+"""
+
+def soften_features(features, tau=0.5, config=None):
+    """ Apply an exponential moving average to the features; tau (seconds) is how long it takes to follow a change. """
+    config = config or load_config()
+    alpha = 1 - np.exp(-1 / (config.fps * tau))  # weight of the new frame
+
+    softened_features = {}
+    for name, values in features.items():
+        if name in NON_FRAME_KEYS or name in NOT_SMOOTHED:
+            softened_features[name] = values
+            continue
+        softened_values = np.zeros_like(values)
+        softened_values[0] = values[0]
+        for i in range(1, len(values)):
+            softened_values[i] = alpha * values[i] + (1 - alpha) * softened_values[i-1]
+        softened_features[name] = softened_values
+    return softened_features
+
+# -----------------------------------------------------------------
 
 def _cache_key(audio_path, config):
     # The cache is reused only while the audio, the analysis parameters and this file stay the same

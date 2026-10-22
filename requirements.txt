@@ -22,3 +22,6 @@ jupyterlab>=4.2
 
 # Testes
 pytest>=8.0
+
+# O próprio projeto, em modo editável
+-e .

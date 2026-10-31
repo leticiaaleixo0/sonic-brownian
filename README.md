@@ -56,14 +56,17 @@ A deriva, o ruído e o impulso são definidos como o que se vê (velocidade da n
 
 ### Leitura discreta: probabilidades de direção
 
-O statement descreve o modelo como probabilidades de deslocamento em cada direção. Num passeio em rede com passos de tamanho *a*:
+O viés b ∈ [−1, 1] de cada eixo é o desequilíbrio entre as chances de andar para cada lado. Num passeio em rede com passos de tamanho *a*:
 
 ```
-P(direita) = (1 + bₓ) / 2        P(esquerda) = (1 − bₓ) / 2        bₓ ∈ [−1, 1]
-passo médio = a · bₓ             variância do passo = a² · (1 − bₓ²)
+P(direita) = (1 + bₓ) / 2        P(esquerda) = (1 − bₓ) / 2
 ```
 
-Com bₓ = 0, as duas direções são equiprováveis e volta o browniano puro. Para bₓ ≠ 0, a deriva média por passo é proporcional a bₓ. No modelo contínuo, bₓ e b_y são os vieses calculados por `compute_bias` em `src/mapping.py`, e a deriva é μ = γ · G · b · presença, com G o ganho em px/quadro.
+- bₓ = 0: os dois lados são equiprováveis (browniano puro).
+- bₓ = 1: sempre para a direita; bₓ = −1: sempre para a esquerda.
+- Em média, cada passo anda a · bₓ.
+
+No código, bₓ e b_y vêm de `compute_bias` (`src/mapping.py`) e viram a deriva μ = γ · G · b · presença, com G o ganho em px/quadro.
 
 ## Stack
 
@@ -93,21 +96,8 @@ pip install -r requirements.txt
 
 # Pré-visualização com o áudio tocando
 python -m src.conditional_visualization <caminho_da_musica>
-
-pytest tests/
 ```
 
-Previsto para as próximas atualizações:
-
-```bash
-python -m src.render faixa.wav --preset calm --out video.mp4
-```
-
-## Avaliação
-
-- **Sinais sintéticos** como testes de comportamento: silêncio deixa a nuvem quase parada, a varredura de frequência a faz subir e o ruído branco produz agitação errática.
-- **Correlação cruzada** entre as features e as séries visuais (velocidade média, altura média, dispersão, matiz), comparada com um modelo nulo de features embaralhadas no tempo.
-- **Mini-estudo perceptivo** com colegas: pareamento áudio–vídeo e nota de coerência.
 
 ## Referências
 

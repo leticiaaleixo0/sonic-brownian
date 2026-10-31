@@ -28,17 +28,42 @@ x[t+1] = x[t] + v[t+1]
 
 Com γ = 1 e μ = 0, o modelo se reduz ao browniano puro.
 
-## Mapeamento inicial
+## Mapeamento
 
-| Parâmetro físico     | Feature                           | Efeito visível                              |
-|----------------------|-----------------------------------|---------------------------------------------|
-| Viés vertical μ_y    | centroide espectral (ou f0)       | sons agudos fazem a nuvem subir             |
-| Viés horizontal μ_x  | balanço de energia graves × agudos | deriva lateral conforme o registro          |
-| Ruído σ              | RMS                               | música forte agita as partículas            |
-| Fricção γ            | planicidade espectral             | tonal → movimento fluido; ruidoso → errático |
-| Impulso              | força de onset                    | cada ataque empurra a nuvem                 |
-| Matiz                | chroma (média circular)           | cor acompanha as classes de altura          |
-| Luminosidade         | centroide espectral               | sons brilhantes, cores claras               |
+Implementado em `src/mapping.py`. Velocidades e distâncias estão em pixels por quadro, no domínio de 1920×1080 do `config/default.yaml`.
+
+| Parâmetro físico     | Feature                                   | Como                                                                 | Efeito visível |
+|----------------------|-------------------------------------------|----------------------------------------------------------------------|----------------|
+| Viés vertical μ_y    | centroide espectral, em oitavas           | quanto o centroide subiu em relação aos últimos 3 s (1 oitava → viés máximo) | som ficando mais agudo faz a nuvem subir, e ela fica lá enquanto o registro se mantém |
+| Viés horizontal μ_x  | fração da energia: agudos − graves        | mudança em relação aos últimos 3 s (0,2 → viés máximo)               | mais agudos empurram para a direita, mais graves para a esquerda |
+| Ruído σ              | RMS em dB, normalizado na faixa           | de 0,6 a 5 px/quadro                                                 | música forte agita as partículas |
+| Fricção γ            | planicidade espectral, em dB absoluto     | de −50 dB (tom puro) a −5 dB (ruído branco) → γ de 0,1 a 0,9          | tonal → caminhos longos e suaves; ruidoso → caminhos erráticos |
+| Impulso              | picos de onset 1,0 acima da mediana do último segundo | dilatação a partir do centro da nuvem (40 px na distância típica), desfeita 4 quadros depois | a cada ataque a nuvem incha e volta, sem abrir buraco no meio |
+| Presença             | RMS absoluto, de −60 a −30 dBFS           | multiplica a deriva e o ruído                                        | no silêncio a nuvem fica parada |
+| Matiz                | chroma                                    | média circular das 12 notas, ponderada pelo chroma, na ordem de Castel (Dó azul, Sol vermelho, Lá violeta; 30° por semitom) | a cor acompanha a harmonia |
+| Luminosidade         | centroide espectral, em oitavas, normalizado na faixa | OKLCH L de 0,55 a 0,92                                   | sons brilhantes, cores claras |
+| Croma (saturação)    | RMS em dB, normalizado na faixa × presença | OKLCH C de 0,07 a 0,20; 0 no silêncio                               | música forte, cores vivas; silêncio cinza |
+| Variação entre partículas | —                                    | desvio fixo de matiz de até ±15° por partícula                       | a nuvem não fica chapada |
+| Rastro               | —                                         | a imagem é multiplicada por 0,9 a cada quadro, em vez de apagada      | as trajetórias ficam visíveis |
+
+As cores estão em OKLCH (`src/color.py`), um espaço em que passos iguais de luminosidade, croma ou matiz parecem mudanças iguais. A paleta de cada faixa ao longo do tempo está em `notebooks/palette.ipynb`.
+
+Por que algumas features usam escala absoluta e não a normalização por faixa: normalizada dentro da própria faixa, uma senoide constante fica igual ao silêncio, e o ruído branco fica igual à senoide.
+
+Por que a deriva segue a *mudança* do som e não o seu valor: com o valor, o silêncio (centroide 0) empurraria a nuvem para baixo sem parar, e a varredura de 100 Hz a 4 kHz faria a nuvem descer na primeira metade. Seguindo a mudança, a posição da nuvem acompanha o registro.
+
+A deriva, o ruído e o impulso são definidos como o que se vê (velocidade da nuvem, velocidade das partículas, distância do empurrão) e convertidos para μ, σ e o impulso da equação usando γ. Assim, a fricção muda só a textura do movimento, e não a velocidade.
+
+### Leitura discreta: probabilidades de direção
+
+O statement descreve o modelo como probabilidades de deslocamento em cada direção. Num passeio em rede com passos de tamanho *a*:
+
+```
+P(direita) = (1 + bₓ) / 2        P(esquerda) = (1 − bₓ) / 2        bₓ ∈ [−1, 1]
+passo médio = a · bₓ             variância do passo = a² · (1 − bₓ²)
+```
+
+Com bₓ = 0, as duas direções são equiprováveis e volta o browniano puro. Para bₓ ≠ 0, a deriva média por passo é proporcional a bₓ. No modelo contínuo, bₓ e b_y são os vieses calculados por `compute_bias` em `src/mapping.py`, e a deriva é μ = γ · G · b · presença, com G o ganho em px/quadro.
 
 ## Stack
 
@@ -52,14 +77,27 @@ data/audio/    faixas de teste e sinais sintéticos
 src/
   features.py    extração e normalização
   mapping.py     features → parâmetros físicos e cores
+  color.py       conversão OKLCH → sRGB
   simulation.py  passeio browniano condicionado
-  render.py      pré-visualização e exportação
+  conditional_visualization.py  pré-visualização com o áudio tocando
+  render.py      exportação em vídeo
   evaluate.py    métricas de coerência
 notebooks/     exploração e figuras
 tests/         testes do modelo
 ```
 
-## Uso previsto
+## Uso
+
+```bash
+pip install -r requirements.txt
+
+# Pré-visualização com o áudio tocando
+python -m src.conditional_visualization <caminho_da_musica>
+
+pytest tests/
+```
+
+Previsto para as próximas atualizações:
 
 ```bash
 python -m src.render faixa.wav --preset calm --out video.mp4

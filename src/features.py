@@ -162,24 +162,30 @@ The features extracted from the audio changes 30 times per second (fps).
 To avoid abrupt changes in the visualization, we apply a softening filter to the features.
 """
 
+def ema(values, tau, config=None):
+    # Exponential moving average of one feature
+    config = config or load_config()
+    alpha = 1 - np.exp(-1 / (config.fps * tau)) # weight of the new frame
+
+    softened_values = np.zeros_like(values, dtype=float)
+    softened_values[0] = values[0]
+    for i in range(1, len(values)):
+        softened_values[i] = alpha * values[i] + (1 - alpha) * softened_values[i-1]
+    return softened_values
+
+
 def soften_features(features, tau=0.5, config=None):
     """ Apply an exponential moving average to the features; tau (seconds) is how long it takes to follow a change. """
     config = config or load_config()
-    alpha = 1 - np.exp(-1 / (config.fps * tau))  # weight of the new frame
 
     softened_features = {}
     for name, values in features.items():
         if name in NON_FRAME_KEYS or name in NOT_SMOOTHED:
             softened_features[name] = values
             continue
-        softened_values = np.zeros_like(values)
-        softened_values[0] = values[0]
-        for i in range(1, len(values)):
-            softened_values[i] = alpha * values[i] + (1 - alpha) * softened_values[i-1]
-        softened_features[name] = softened_values
+        softened_features[name] = ema(values, tau, config)
     return softened_features
 
-# -----------------------------------------------------------------
 
 def _cache_key(audio_path, config):
     # The cache is reused only while the audio, the analysis parameters and this file stay the same
@@ -191,7 +197,7 @@ def _cache_key(audio_path, config):
 
 
 def _write_cache(path, features, key):
-    # T × K matrix: one row per video frame, one column per feature
+    # T * K matrix: one row per video frame, one column per feature
     columns = [name for name in features if name not in NON_FRAME_KEYS]
     matrix = np.stack([features[name] for name in columns], axis=1)
 

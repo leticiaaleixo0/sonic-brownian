@@ -15,6 +15,7 @@ import pygame
 from src.color import oklch_to_srgb
 from src.config import load_config
 from src.features import load_features
+from src.hyperparameters import HUE_SPREAD, TRAIL_DECAY
 from src.mapping import map_features_to_color_params, map_features_to_physical_params
 from src.simulation import initial_cloud, simulate_frame
 
@@ -22,8 +23,6 @@ DEFAULT_AUDIO = Path(__file__).resolve().parent.parent / "data" / "audio" / "son
 WINDOW_SCALE = 0.5 # simulation domain
 POINT_SIZE = 2 # size in pixels
 DRAW_FPS = 60 # screen refresh rate
-TRAIL_DECAY = 0.9 # share of the trail kept from one frame to the next
-HUE_SPREAD = 15 # fixed hue offset of each particle, up to ± this many degrees
 
 
 def particle_colors(colors, frame, hue_offsets):

@@ -1,5 +1,7 @@
 import numpy as np
 
+from src.hyperparameters import INITIAL_SPREAD
+
 
 def step_simulation(
     positions: np.ndarray,
@@ -78,7 +80,7 @@ def step_simulation(
 
 # Simulation conditioned by the music -------------------------------
 
-def initial_cloud(n_particles, width, height, rng, spread=0.1):
+def initial_cloud(n_particles, width, height, rng, spread=INITIAL_SPREAD):
     """Gaussian cloud at the centre of the domain"""
     return rng.normal([width / 2, height / 2], spread * height, size=(n_particles, 2)) % [width, height]
 

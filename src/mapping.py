@@ -7,34 +7,12 @@ from scipy.ndimage import median_filter
 
 from src.config import load_config
 from src.features import ema, normalize_features, soften_features
+from src.hyperparameters import (
+    CHROMA_RANGE, DRIFT_TAU, FAST_TAU, FLATNESS_DB, FRICTION_MAX, FRICTION_MIN, HORIZONTAL_GAIN, HUE_OF_C,
+    LIGHTNESS_RANGE, OCTAVES_FOR_FULL_BIAS, ONSET_GAIN, ONSET_THRESHOLD, PRESENCE_DB, PULSE_FRAMES,
+    SHARE_FOR_FULL_BIAS, SIGMA_MAX, SIGMA_MIN, SLOW_TAU, VERTICAL_GAIN,
+)
 
-# Target quantities, in pixels per frame
-VERTICAL_GAIN = 1.3 
-HORIZONTAL_GAIN = 1.0  
-SIGMA_MIN = 0.6 # random speed in the quietest part of the track (while there is sound)
-SIGMA_MAX = 5.0 # random speed in the loudest part
-FRICTION_MIN = 0.1  
-FRICTION_MAX = 0.9  
-ONSET_GAIN = 40.0 # distance (px) an attack moves the particles at the typical radius of the cloud
-ONSET_THRESHOLD = 1.0  
-PULSE_FRAMES = 4  # frames until the pulse is undone
-
-# Absolute scales, the same for every track
-PRESENCE_DB = (-60.0, -30.0)   
-FLATNESS_DB = (-50.0, -5.0)    
-
-# Drift follows how the sound changed relative to its recent past
-DRIFT_TAU = 3.0 
-OCTAVES_FOR_FULL_BIAS = 1.0   
-SHARE_FOR_FULL_BIAS = 0.2
-
-FAST_TAU = 0.1  
-SLOW_TAU = 0.5 
-
-# Colour, in OKLCH
-HUE_OF_C = 239.0 # Castel: C blue; -30° per semitone gives G red and A violet
-LIGHTNESS_RANGE = (0.55, 0.92) # lowest to highest centroid of the track
-CHROMA_RANGE = (0.07, 0.20) # quietest to loudest part of the track (grey in silence)
 
 # preparing some features for mapping
 

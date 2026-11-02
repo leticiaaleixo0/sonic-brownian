@@ -30,7 +30,7 @@ Com γ = 1 e μ = 0, o modelo se reduz ao browniano puro.
 
 ## Mapeamento
 
-Implementado em `src/mapping.py`. Velocidades e distâncias estão em pixels por quadro, no domínio de 1920×1080 do `config/default.yaml`.
+Implementado em `src/mapping.py`; os valores da tabela ficam em `src/hyperparameters.py`. Velocidades e distâncias estão em pixels por quadro, no domínio de 1920×1080 do `config/default.yaml`.
 
 | Parâmetro físico     | Feature                                   | Como                                                                 | Efeito visível |
 |----------------------|-------------------------------------------|----------------------------------------------------------------------|----------------|
@@ -80,6 +80,7 @@ data/audio/    faixas de teste e sinais sintéticos
 src/
   features.py    extração e normalização
   mapping.py     features → parâmetros físicos e cores
+  hyperparameters.py  ganhos, escalas, suavização, cor e rastro
   color.py       conversão OKLCH → sRGB
   simulation.py  passeio browniano condicionado
   conditional_visualization.py  pré-visualização com o áudio tocando

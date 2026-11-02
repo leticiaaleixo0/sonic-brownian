@@ -31,6 +31,7 @@ import librosa
 import numpy as np
 
 from src.config import load_config
+from src.hyperparameters import MIN_RELATIVE_RANGE, SLOW_TAU
 
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache"
 
@@ -126,10 +127,6 @@ def load_features(audio_path, config=None, cache_dir=DEFAULT_CACHE_DIR, force=Fa
 # Volume and energy are perceived on a log scale, so they are normalized in dB
 DB_FEATURES = {"rms": 20, "low_energy": 10, "mid_energy": 10, "high_energy": 10}
 
-# A 5–95% range smaller than this fraction of the feature's magnitude counts as constant.
-# Without it, a steady tone would have its tiny fluctuations stretched over [0, 1].
-MIN_RELATIVE_RANGE = 0.05
-
 # Onsets are instants: smoothing would spread and delay each attack
 NOT_SMOOTHED = ("onset_strength",)
 
@@ -174,7 +171,7 @@ def ema(values, tau, config=None):
     return softened_values
 
 
-def soften_features(features, tau=0.5, config=None):
+def soften_features(features, tau=SLOW_TAU, config=None):
     """ Apply an exponential moving average to the features; tau (seconds) is how long it takes to follow a change. """
     config = config or load_config()
 

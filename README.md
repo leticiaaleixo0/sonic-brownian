@@ -70,7 +70,7 @@ No código, bₓ e b_y vêm de `compute_bias` (`src/mapping.py`) e viram a deriv
 
 ## Stack
 
-Python com `librosa`, `numpy` e `scipy` (áudio e simulação), `pygame` (pré-visualização em tempo real), `imageio-ffmpeg` (exportação em vídeo), `matplotlib`, `pandas` e Jupyter (análise).
+Python com `librosa`, `numpy` e `scipy` (áudio e simulação), `pygame` (pré-visualização em tempo real), `imageio-ffmpeg` (exportação em vídeo), `matplotlib`, `pandas` e Jupyter (análise), FastAPI (API) e React com Vite (interface).
 
 ## Estrutura planejada
 
@@ -88,6 +88,7 @@ src/
   pipeline.py    áudio → features → simulação, na janela ou em MP4
   api/           API HTTP (FastAPI): envio do áudio, acompanhamento e download do vídeo
   evaluate.py    métricas de coerência
+frontend/      interface em React + Vite
 notebooks/     exploração e figuras
 tests/         testes do modelo
 ```
@@ -118,6 +119,16 @@ uvicorn src.api.main:app --reload    # documentação interativa em http://127.0
 | `GET /api/videos/{task_id}`      | estado da tarefa: `queued`, `running`, `completed` ou `failed` (com o erro) |
 | `GET /api/videos/{task_id}/file` | baixa o MP4 quando a tarefa termina |
 | `GET /api/health`                | verifica se a API está no ar |
+
+### Interface (React + Vite)
+
+Precisa do Node 20.19 ou mais recente. Com a API rodando em outro terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev    # http://localhost:5173
+```
 
 
 ## Referências

@@ -221,3 +221,7 @@ __marimo__/
 
 # Cache de features (recalculável a partir dos áudios)
 data/cache/
+
+# Vídeos exportados por src/render.py e áudios enviados à API
+data/videos/
+data/uploads/

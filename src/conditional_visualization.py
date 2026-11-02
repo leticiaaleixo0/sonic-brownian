@@ -50,6 +50,12 @@ def run_preview(audio_path, config=None):
     features = load_features(audio_path, config)
     params = map_features_to_physical_params(features, config)
     colors = map_features_to_color_params(features, config)
+    return play_simulation(audio_path, params, colors, config)
+
+
+def play_simulation(audio_path, params, colors, config=None):
+    """Play audio_path with the cloud driven by params and colors (from mapping.py). Returns the number of frames simulated."""
+    config = config or load_config()
     n_frames = len(params["sigma"])
     width, height = config.width, config.height
     rng = np.random.default_rng(config.seed)

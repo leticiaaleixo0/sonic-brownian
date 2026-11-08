@@ -7,6 +7,7 @@ from scipy.ndimage import median_filter
 
 from src.config import load_config
 from src.features import ema, normalize_features, soften_features
+from src.hyperparameters import resolve
 from src.hyperparameters import (
     CHROMA_RANGE, DRIFT_TAU, FAST_TAU, FLATNESS_DB, FRICTION_MAX, FRICTION_MIN, HORIZONTAL_GAIN, HUE_OF_C,
     LIGHTNESS_RANGE, OCTAVES_FOR_FULL_BIAS, ONSET_GAIN, ONSET_THRESHOLD, PRESENCE_DB, PULSE_FRAMES,
@@ -81,7 +82,7 @@ def map_noise_intensity(rms, presence, sigma_min=SIGMA_MIN, sigma_max=SIGMA_MAX)
     return presence * (sigma_min + (sigma_max - sigma_min) * rms)
 
 
-def map_friction(spectral_flatness, friction_min=FRICTION_MIN, friction_max=FRICTION_MAX):
+def map_friction(spectral_flatness, friction_min=FRICTION_MIN, friction_max=FRICTION_MAX, flatness_db=FLATNESS_DB):
     """ Friction from the raw spectral flatness in dB: tonal -> low friction (fluid), noisy -> high friction (erratic). """
     if friction_min < 0 or friction_max < friction_min or friction_max > 1:
         raise ValueError(f"Expected 0 <= friction_min <= friction_max <= 1, got friction_min={friction_min} and friction_max={friction_max}")
@@ -90,8 +91,9 @@ def map_friction(spectral_flatness, friction_min=FRICTION_MIN, friction_max=FRIC
     if not np.all(np.isfinite(spectral_flatness)):
         raise ValueError(f"Spectral flatness values must be finite, got {spectral_flatness}")
 
+    floor_db, full_db = flatness_db
     flatness_db = 10 * np.log10(spectral_flatness + 1e-10)
-    noisiness = np.clip((flatness_db - FLATNESS_DB[0]) / (FLATNESS_DB[1] - FLATNESS_DB[0]), 0.0, 1.0)
+    noisiness = np.clip((flatness_db - floor_db) / (full_db - floor_db), 0.0, 1.0)
     return friction_min + (friction_max - friction_min) * noisiness
 
 
@@ -116,30 +118,32 @@ def map_onset_impulse(onset_strength, window, onset_gain=ONSET_GAIN, onset_thres
 
 
 # uses the previous functions and combines them into a single dictionary
-def map_features_to_physical_params(features, config=None):
+def map_features_to_physical_params(features, config=None, hp=None):
     """ Map the raw features (as returned by load_features) to the Langevin parameters of each frame.
 
+    hp: hyperparameters from hyperparameters.resolve (default: the values of hyperparameters.py).
     Returns arrays of length T: mu_x, mu_y (positive is up), sigma, friction and onset_impulse.
     """
     config = config or load_config()
+    hp = hp or resolve()
     normalized_features = normalize_features(features)
 
-    presence = ema(compute_presence(features["rms"]), FAST_TAU, config)
+    presence = ema(compute_presence(features["rms"], *hp.PRESENCE_DB), hp.FAST_TAU, config)
 
     # Centroid in octaves
     octaves = np.log2(np.maximum(features["spectral_centroid"], 20.0))
-    octaves = ema(hold_through_silence(octaves, presence), SLOW_TAU, config)
-    vertical_bias = compute_bias(octaves, OCTAVES_FOR_FULL_BIAS, config)
+    octaves = ema(hold_through_silence(octaves, presence), hp.SLOW_TAU, config)
+    vertical_bias = compute_bias(octaves, hp.OCTAVES_FOR_FULL_BIAS, config, tau=hp.DRIFT_TAU)
 
     balance = compute_energy_balance(features["low_energy"], features["high_energy"], mid_energy=features["mid_energy"])
-    balance = ema(hold_through_silence(balance, presence), SLOW_TAU, config)
-    horizontal_bias = compute_bias(balance, SHARE_FOR_FULL_BIAS, config)
+    balance = ema(hold_through_silence(balance, presence), hp.SLOW_TAU, config)
+    horizontal_bias = compute_bias(balance, hp.SHARE_FOR_FULL_BIAS, config, tau=hp.DRIFT_TAU)
 
-    drift_x = map_horizontal_drift(horizontal_bias, presence)
-    drift_y = map_vertical_drift(vertical_bias, presence)
-    agitation = map_noise_intensity(ema(normalized_features["rms"], FAST_TAU, config), presence)
-    gamma = map_friction(ema(features["spectral_flatness"], SLOW_TAU, config))
-    impulse = map_onset_impulse(features["onset_strength"], window=config.fps + 1)
+    drift_x = map_horizontal_drift(horizontal_bias, presence, hp.HORIZONTAL_GAIN)
+    drift_y = map_vertical_drift(vertical_bias, presence, hp.VERTICAL_GAIN)
+    agitation = map_noise_intensity(ema(normalized_features["rms"], hp.FAST_TAU, config), presence, hp.SIGMA_MIN, hp.SIGMA_MAX)
+    gamma = map_friction(ema(features["spectral_flatness"], hp.SLOW_TAU, config), hp.FRICTION_MIN, hp.FRICTION_MAX, hp.FLATNESS_DB)
+    impulse = map_onset_impulse(features["onset_strength"], config.fps + 1, hp.ONSET_GAIN, hp.ONSET_THRESHOLD, hp.PULSE_FRAMES)
 
     # Scale by gamma so that the friction changes the texture, not the speed (gamma = 1 changes nothing)
     physical_params = {
@@ -159,7 +163,7 @@ def pitch_class_hues(hue_of_c=HUE_OF_C):
     return (hue_of_c - 30.0 * np.arange(12)) % 360
 
 
-def map_color(features, presence=1.0, lightness_range=LIGHTNESS_RANGE, chroma_range=CHROMA_RANGE, eps=1e-8):
+def map_color(features, presence=1.0, lightness_range=LIGHTNESS_RANGE, chroma_range=CHROMA_RANGE, hue_of_c=HUE_OF_C, eps=1e-8):
     """ OKLCH colour per frame from normalized features: hue from the chroma, lightness from the centroid, chroma from the RMS. """
     if not (0 <= lightness_range[0] <= lightness_range[1] <= 1):
         raise ValueError("Lightness limits must satisfy 0 <= min <= max <= 1.")
@@ -183,7 +187,8 @@ def map_color(features, presence=1.0, lightness_range=LIGHTNESS_RANGE, chroma_ra
     centroid = np.clip(centroid, 0.0, 1.0)
 
     # Circular mean of the pitch-class hues, weighted by the chroma
-    angles = np.deg2rad(pitch_class_hues())
+    hues = pitch_class_hues(hue_of_c)
+    angles = np.deg2rad(hues)
 
     cos_component = chroma @ np.cos(angles)
     sin_component = chroma @ np.sin(angles)
@@ -195,7 +200,7 @@ def map_color(features, presence=1.0, lightness_range=LIGHTNESS_RANGE, chroma_ra
     ambiguous = resultant < eps
 
     dominant_note = np.argmax(chroma, axis=1)
-    hue = np.where(ambiguous, pitch_class_hues()[dominant_note], hue)
+    hue = np.where(ambiguous, hues[dominant_note], hue)
 
     lightness = lightness_range[0] + (lightness_range[1] - lightness_range[0]) * centroid  # bright sounds, light colours
     color_chroma = presence * (chroma_range[0] + (chroma_range[1] - chroma_range[0]) * rms)  # loud sounds, vivid colours
@@ -203,13 +208,14 @@ def map_color(features, presence=1.0, lightness_range=LIGHTNESS_RANGE, chroma_ra
     return {"lightness": lightness, "chroma": color_chroma, "hue": hue}
 
 
-def map_features_to_color_params(features, config=None):
+def map_features_to_color_params(features, config=None, hp=None):
     """ Map the raw features (as returned by load_features) to the OKLCH colour of each frame. """
     config = config or load_config()
+    hp = hp or resolve()
     octaves = np.log2(np.maximum(features["spectral_centroid"], 20.0))
     normalized = normalize_features({"rms": features["rms"], "spectral_centroid": octaves})
 
-    smoothed = {name: ema(values, SLOW_TAU, config) for name, values in normalized.items()}
-    smoothed.update({f"chroma_{i}": ema(features[f"chroma_{i}"], SLOW_TAU, config) for i in range(12)})
-    presence = ema(compute_presence(features["rms"]), SLOW_TAU, config)
-    return map_color(smoothed, presence)
+    smoothed = {name: ema(values, hp.SLOW_TAU, config) for name, values in normalized.items()}
+    smoothed.update({f"chroma_{i}": ema(features[f"chroma_{i}"], hp.SLOW_TAU, config) for i in range(12)})
+    presence = ema(compute_presence(features["rms"], *hp.PRESENCE_DB), hp.SLOW_TAU, config)
+    return map_color(smoothed, presence, hp.LIGHTNESS_RANGE, hp.CHROMA_RANGE, hp.HUE_OF_C)

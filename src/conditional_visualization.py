@@ -15,7 +15,7 @@ import pygame
 from src.color import oklch_to_srgb
 from src.config import load_config
 from src.features import load_features
-from src.hyperparameters import HUE_SPREAD, TRAIL_DECAY
+from src.hyperparameters import HUE_SPREAD, TRAIL_DECAY, resolve
 from src.mapping import map_features_to_color_params, map_features_to_physical_params
 from src.simulation import initial_cloud, simulate_frame
 
@@ -25,16 +25,16 @@ POINT_SIZE = 2 # size in pixels
 DRAW_FPS = 60 # screen refresh rate
 
 
-def particle_colors(colors, frame, hue_offsets):
+def particle_colors(colors, frame, hue_offsets, hue_spread=HUE_SPREAD):
     """RGB (0–255) of each particle: the frame's OKLCH colour turned by the particle's hue offset."""
-    offsets = np.arange(-HUE_SPREAD, HUE_SPREAD + 1)
+    offsets = np.arange(-hue_spread, hue_spread + 1)
     palette = oklch_to_srgb(colors["lightness"][frame], colors["chroma"][frame], colors["hue"][frame] + offsets)
-    return 255 * palette[hue_offsets + HUE_SPREAD]
+    return 255 * palette[hue_offsets + hue_spread]
 
 
-def draw_frame(trail, positions, rgb, width, height):
+def draw_frame(trail, positions, rgb, width, height, trail_decay=TRAIL_DECAY):
     """Fade the trail and draw the particles on it (y is flipped: up in the simulation, down on screen)."""
-    trail *= TRAIL_DECAY
+    trail *= trail_decay
     w, h = trail.shape[:2]
     xs = (positions[:, 0] * w / width).astype(int)
     ys = ((height - positions[:, 1]) * h / height).astype(int)
@@ -50,12 +50,19 @@ def run_preview(audio_path, config=None):
     features = load_features(audio_path, config)
     params = map_features_to_physical_params(features, config)
     colors = map_features_to_color_params(features, config)
+    return play_simulation(audio_path, params, colors, config)
+
+
+def play_simulation(audio_path, params, colors, config=None, hp=None):
+    """Play audio_path with the cloud driven by params and colors (from mapping.py). Returns the number of frames simulated."""
+    config = config or load_config()
+    hp = hp or resolve()
     n_frames = len(params["sigma"])
     width, height = config.width, config.height
     rng = np.random.default_rng(config.seed)
-    positions = initial_cloud(config.n_particles_preview, width, height, rng)
+    positions = initial_cloud(config.n_particles_preview, width, height, rng, hp.INITIAL_SPREAD)
     velocities = np.zeros_like(positions)
-    hue_offsets = np.random.default_rng(config.seed + 1).integers(-HUE_SPREAD, HUE_SPREAD + 1, len(positions))
+    hue_offsets = np.random.default_rng(config.seed + 1).integers(-hp.HUE_SPREAD, hp.HUE_SPREAD + 1, len(positions))
 
     pygame.init()
     pygame.mixer.init(buffer=512)
@@ -76,7 +83,7 @@ def run_preview(audio_path, config=None):
         audio_frame = min(int(pygame.mixer.music.get_pos() / 1000 * config.fps), n_frames)
         while frame < audio_frame:
             positions, velocities = simulate_frame(positions, velocities, params, frame, width, height, rng)
-            draw_frame(trail, positions, particle_colors(colors, frame, hue_offsets), width, height)
+            draw_frame(trail, positions, particle_colors(colors, frame, hue_offsets, hp.HUE_SPREAD), width, height, hp.TRAIL_DECAY)
             frame += 1
         # drawning the current state of the simulation:
         pygame.surfarray.blit_array(screen, trail.astype(np.uint8))

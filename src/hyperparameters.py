@@ -2,6 +2,7 @@
 Hyperparameters of the simulation, in one place.
 Global parameters (sample rate, fps, domain size, number of particles, seed) stay in config/default.yaml.
 """
+from types import SimpleNamespace
 
 # Normalization
 MIN_RELATIVE_RANGE = 0.05 # a 5–95% range below this share of the feature's magnitude counts as constant
@@ -41,3 +42,12 @@ HUE_SPREAD = 15 # fixed hue offset of each particle, up to ± this many degrees
 # Particles (simulation.py, conditional_visualization.py)
 INITIAL_SPREAD = 0.1 # std of the initial cloud, as a share of the domain height
 TRAIL_DECAY = 0.9 # share of the trail kept from one frame to the next
+
+
+def resolve(overrides=None):
+    """All hyperparameters above as a namespace, with overrides (keyed by constant name) replacing the defaults."""
+    defaults = {name: value for name, value in globals().items() if name.isupper()}
+    unknown = set(overrides or {}) - defaults.keys()
+    if unknown:
+        raise ValueError(f"Unknown hyperparameters: {sorted(unknown)}")
+    return SimpleNamespace(**{**defaults, **(overrides or {})})

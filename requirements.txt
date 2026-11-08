@@ -23,5 +23,10 @@ jupyterlab>=4.2
 # Testes
 pytest>=8.0
 
+# API
+fastapi>=0.115
+python-multipart>=0.0.9  # upload do áudio (UploadFile, Form)
+uvicorn>=0.30            # servidor
+
 # O próprio projeto, em modo editável
 -e .

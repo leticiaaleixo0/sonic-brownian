@@ -5,7 +5,8 @@ const API_URL = import.meta.env.VITE_API_URL ?? "";
 // FastAPI puts the reason in "detail": a string, or a list of validation errors
 async function errorMessage(response, action) {
     const body = await response.json().catch(() => null);
-    const detail = typeof body?.detail === "string" ? body.detail : body?.detail?.[0]?.msg;
+    const first = body?.detail?.[0];
+    const detail = typeof body?.detail === "string" ? body.detail : first && [first.loc?.at(-1), first.msg].filter(Boolean).join(": ");
     return `${action}: ${detail ?? response.statusText}`;
 }
 
@@ -16,11 +17,25 @@ export async function checkHealth() {
 }
 
 
-export async function uploadAudio(file, nParticles){
+// Hyperparameters the video request accepts: [{ name, title, description, type, default, minimum, maximum }]
+export async function getHyperparameters() {
+    const response = await fetch(`${API_URL}/api/hyperparameters`);
+    if (!response.ok) {
+        throw new Error(await errorMessage(response, "Failed to load hyperparameters"));
+    }
+    return response.json();
+}
+
+
+// hyperparameters: only the values that differ from the defaults, keyed by name
+export async function uploadAudio(file, nParticles, hyperparameters = {}){
     const formData = new FormData();
     formData.append("audio", file);
     if (nParticles) {
         formData.append("n_particles", nParticles);
+    }
+    if (Object.keys(hyperparameters).length) {
+        formData.append("hyperparameters", JSON.stringify(hyperparameters));
     }
 
     const response = await fetch(`${API_URL}/api/videos`, {

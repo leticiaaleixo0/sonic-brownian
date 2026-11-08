@@ -1,6 +1,10 @@
 /* index.css - Estilo "Documentação Científica / Paper" */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Source+Sans+Pro:wght@400;600&family=Fira+Code:wght@400;500&display=swap');
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   background-color: #0d1117; /* Fundo estilo GitHub Dark */
   color: #c9d1d9;
@@ -265,4 +269,157 @@ code {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.95rem;
+}
+
+/* Formulário da demonstração */
+.upload-fields {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.95rem;
+  color: #c9d1d9;
+}
+
+.field-label input {
+  margin-top: 6px;
+}
+
+.field-hint {
+  color: #8b949e;
+  font-size: 0.85rem;
+  margin: -8px 0 15px;
+}
+
+.status-line {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  color: #8b949e;
+  margin-top: 20px;
+}
+
+.error-message {
+  color: #f85149;
+  margin-top: 15px;
+}
+
+/* Botões secundários */
+.button-secondary {
+  background-color: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  text-align: left;
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: #30363d;
+}
+
+.button-icon {
+  width: auto;
+  margin: 0;
+  padding: 0 8px;
+  font-size: 1rem;
+  line-height: 1.6;
+  background-color: transparent;
+  color: #58a6ff;
+  border: 1px solid transparent;
+}
+
+.button-icon:hover:not(:disabled) {
+  background-color: #21262d;
+  border-color: #30363d;
+}
+
+.button-icon:disabled {
+  background-color: transparent;
+  border-color: transparent;
+  color: #30363d;
+}
+
+/* Painel de hiperparâmetros */
+.hp-panel {
+  margin-bottom: 10px;
+}
+
+.hp-body {
+  margin-top: 15px;
+}
+
+.hp-group {
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px 16px 4px;
+  margin: 0 0 15px;
+}
+
+.hp-group legend {
+  color: #58a6ff;
+  font-weight: 600;
+  padding: 0 6px;
+}
+
+.hp-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #21262d;
+}
+
+.hp-row:last-child {
+  border-bottom: none;
+}
+
+.hp-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.hp-row-changed label {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.hp-row-controls {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 12px;
+  align-items: center;
+}
+
+.hp-row-controls input[type="number"] {
+  margin: 0;
+  padding: 6px 8px;
+}
+
+.hp-row-controls input[type="range"] {
+  width: 100%;
+  accent-color: #58a6ff;
+}
+
+.hp-description {
+  color: #8b949e;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+.hp-warning {
+  color: #d29922;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .demo-panel {
+    padding: 25px 20px;
+  }
+  .paper-container {
+    padding: 40px 16px;
+  }
+}
+
+a {
+  color: #58a6ff;
 }

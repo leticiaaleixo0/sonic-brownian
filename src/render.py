@@ -16,7 +16,7 @@ import numpy as np
 from src.conditional_visualization import draw_frame, particle_colors
 from src.config import load_config
 from src.features import load_features
-from src.hyperparameters import HUE_SPREAD
+from src.hyperparameters import resolve
 from src.mapping import map_features_to_color_params, map_features_to_physical_params
 from src.simulation import initial_cloud, simulate_frame
 
@@ -24,18 +24,19 @@ DEFAULT_VIDEO_DIR = Path(__file__).resolve().parent.parent / "data" / "videos"
 VIDEO_QUALITY = 6 # imageio-ffmpeg scale from 1 to 10
 
 
-def export_video(audio_path, params, colors, output_path=None, config=None, n_particles=None, scale=1.0):
+def export_video(audio_path, params, colors, output_path=None, config=None, n_particles=None, scale=1.0, hp=None):
     """Render the cloud driven by params and colors (from mapping.py) to an MP4 with the audio of audio_path. Returns the video path."""
     config = config or load_config()
+    hp = hp or resolve()
     output_path = Path(output_path or DEFAULT_VIDEO_DIR / f"{Path(audio_path).stem}.mp4")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     n_frames = len(params["sigma"])
     width, height = config.width, config.height
     rng = np.random.default_rng(config.seed)
-    positions = initial_cloud(n_particles or config.n_particles_export, width, height, rng)
+    positions = initial_cloud(n_particles or config.n_particles_export, width, height, rng, hp.INITIAL_SPREAD)
     velocities = np.zeros_like(positions)
-    hue_offsets = np.random.default_rng(config.seed + 1).integers(-HUE_SPREAD, HUE_SPREAD + 1, len(positions))
+    hue_offsets = np.random.default_rng(config.seed + 1).integers(-hp.HUE_SPREAD, hp.HUE_SPREAD + 1, len(positions))
 
     size = (int(width * scale), int(height * scale))
     trail = np.zeros((*size, 3), dtype=np.float32)
@@ -46,7 +47,7 @@ def export_video(audio_path, params, colors, output_path=None, config=None, n_pa
     try:
         for frame in range(n_frames):
             positions, velocities = simulate_frame(positions, velocities, params, frame, width, height, rng)
-            draw_frame(trail, positions, particle_colors(colors, frame, hue_offsets), width, height)
+            draw_frame(trail, positions, particle_colors(colors, frame, hue_offsets, hp.HUE_SPREAD), width, height, hp.TRAIL_DECAY)
             writer.send(np.ascontiguousarray(trail.astype(np.uint8).transpose(1, 0, 2)))
     finally:
         writer.close()

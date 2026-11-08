@@ -24,20 +24,22 @@ export function AudioUpload({ onUpload, onError, disabled }){
             setLoading(false);
         }
     }
+
     return (
-        <div>
+        <div className="card">
+            <h2>🎵 Sonic Brownian</h2>
             <p>
                 <input type="file" accept=".wav,.mp3" onChange={(e) => setFile(e.target.files[0] ?? null)} />
             </p>
-            <p>
+            <p style={{ textAlign: "left" }}>
                 <label>
-                    Particles (optional):{" "}
-                    <input type="number" min="1" max={MAX_PARTICLES} placeholder="default" value={nParticles}
+                    Partículas (opcional):
+                    <input type="number" min="1" max={MAX_PARTICLES} placeholder="Padrão do sistema" value={nParticles}
                         onChange={(e) => setNParticles(e.target.value)} />
                 </label>
             </p>
             <button onClick={handleUpload} disabled={!file || loading || disabled}>
-                {loading ? "Uploading..." : "Generate visualization"}
+                {loading ? "Enviando áudio..." : "Gerar visualização"}
             </button>
         </div>
     )

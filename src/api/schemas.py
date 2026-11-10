@@ -17,11 +17,25 @@ class VideoResponse(BaseModel):
     status: TaskStatus
 
 
+CombinedStatus = Literal["pending", "running", "ready", "failed", "unavailable"]
+
+
 class VideoStatusResponse(BaseModel):
     task_id: str
     status: TaskStatus
     video_url: str | None = None
     error: str | None = None
+    combined_status: CombinedStatus | None = Field(None, description="Side-by-side video (particles | entropy); it is rendered after the main video is completed.")
+    combined_video_url: str | None = Field(None, description="Set when combined_status is ready.")
+
+
+class EntropyResponse(BaseModel):
+    """Entropy S(t) = -∫ρ ln ρ of the particle density, from the Fokker–Planck equation (src/fokker_planck.py)."""
+    task_id: str
+    fps: int = Field(description="Frames per second of the video; time[i] = i / fps.")
+    time: list[float] = Field(description="Time (s) of each entropy value; the first is the initial cloud (t = 0).")
+    entropy: list[float] = Field(description="Entropy (nats) at each time.")
+    max_entropy: float = Field(description="ln(width × height): the entropy of the uniform distribution on the domain.")
 
 
 class Hyperparameters(BaseModel):

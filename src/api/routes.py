@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
 from src.api import services
-from src.api.schemas import HealthResponse, HyperparameterSpec, Hyperparameters, VideoResponse, VideoStatusResponse
+from src.api.schemas import EntropyResponse, HealthResponse, HyperparameterSpec, Hyperparameters, VideoResponse, VideoStatusResponse
 
 router = APIRouter(tags=["Sonic Brownian API"], prefix="/api")
 
@@ -71,7 +71,12 @@ def request_video_rendering(
 def get_video_status(task_id: str) -> VideoStatusResponse:
     task = _find_task(task_id)
     video_url = f"{router.prefix}/videos/{task_id}/file" if task.status == "completed" else None
-    return VideoStatusResponse(task_id=task_id, status=task.status, video_url=video_url, error=task.error)
+    combined_ready = task.combined_status == "ready"
+    return VideoStatusResponse(
+        task_id=task_id, status=task.status, video_url=video_url, error=task.error,
+        combined_status=task.combined_status if task.status == "completed" else None,
+        combined_video_url=f"{router.prefix}/videos/{task_id}/combined" if combined_ready else None,
+    )
 
 
 @router.get(
@@ -84,3 +89,33 @@ def download_video_file(task_id: str) -> FileResponse:
     if task.status != "completed":
         raise HTTPException(409, f"The video is not ready (status: {task.status}).")
     return FileResponse(task.video_path, media_type="video/mp4", filename=f"{task_id}.mp4")
+
+
+@router.get(
+    "/videos/{task_id}/combined",
+    response_class=FileResponse,
+    summary="Download the side-by-side video (particles on the left, entropy over time on the right) of a completed task.",
+)
+def download_combined_video(task_id: str) -> FileResponse:
+    task = _find_task(task_id)
+    if task.status != "completed":
+        raise HTTPException(409, f"The video is not ready (status: {task.status}).")
+    if task.combined_status in ("pending", "running"):
+        raise HTTPException(409, "The side-by-side video is still being rendered.")
+    if task.combined_status != "ready":
+        raise HTTPException(404, "The side-by-side video could not be rendered for this task.")
+    return FileResponse(task.combined_path, media_type="video/mp4", filename=f"{task_id}_particulas_entropia.mp4")
+
+
+@router.get(
+    "/videos/{task_id}/entropy",
+    response_model=EntropyResponse,
+    summary="Get the entropy of the particle cloud over time (Fokker–Planck) of a completed task.",
+)
+def get_video_entropy(task_id: str) -> EntropyResponse:
+    task = _find_task(task_id)
+    if task.status != "completed":
+        raise HTTPException(409, f"The entropy is not ready (status: {task.status}).")
+    if task.entropy is None:
+        raise HTTPException(404, "The entropy could not be computed for this task.")
+    return EntropyResponse(task_id=task_id, **task.entropy)

@@ -4,7 +4,7 @@ import { AudioUpload } from "../components/AudioUpload.jsx";
 import { ErrorMessage } from "../components/ErrorMessage.jsx";
 import { HyperparameterPanel, rangeConflicts } from "../components/HyperparameterPanel.jsx";
 import { ProcessingStatus } from "../components/ProcessingStatus.jsx";
-import { VideoPlayer } from "../components/VideoPlayer.jsx";
+import { ResultView } from "../components/ResultView.jsx";
 import { getHyperparameters, uploadAudio } from "../services/api.js";
 
 
@@ -62,7 +62,7 @@ export function DemoSection() {
                 </button>
 
                 {phase === "processing" && <ProcessingStatus taskId={taskId} onComplete={handleComplete} onError={handleError} />}
-                {phase === "completed" && <VideoPlayer taskId={taskId} />}
+                {phase === "completed" && <ResultView taskId={taskId} />}
                 <ErrorMessage message={error} />
             </div>
         </section>

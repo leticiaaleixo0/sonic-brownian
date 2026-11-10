@@ -37,11 +37,12 @@ FRAME_THICKNESS = 2
 FRAME_COLOR = "0xc9d1d9@0.9" # ffmpeg colour@opacity of the frame around the particles' domain
 CRF = 20 # x264 quality: lower is better (18 is almost lossless, 23 is the default)
 FONT_PATH = Path(matplotlib.get_data_path()) / "fonts" / "ttf" / "DejaVuSansMono.ttf"
+REFERENCE_SIDE = 1188 # panel side (px) the text and line sizes here are tuned for; other panels scale them
 
 
 def _background(entropy, max_entropy, duration, width, height):
     """The part of the chart that never changes, as a PIL image, plus the function (seconds, nats) -> pixel."""
-    dpi = 100
+    dpi = 100 * height / REFERENCE_SIDE # fixes the pixel size via figsize, so it only scales text and lines
     figure = Figure(figsize=(width / dpi, height / dpi), dpi=dpi, facecolor=BACKGROUND)
     FigureCanvasAgg(figure)
     axes = figure.add_axes([0.10, 0.24, 0.86, 0.52], facecolor=BACKGROUND)
@@ -88,20 +89,23 @@ def render_entropy_frames(entropy_data, n_frames, width, height):
 
     background, to_pixel, plot_top, plot_bottom = _background(entropy, entropy_data["max_entropy"], duration, width, height)
     points = [to_pixel(t, s) for t, s in zip(seconds, entropy)]
-    font = ImageFont.truetype(str(FONT_PATH), 14)
+    scale = height / REFERENCE_SIDE
+    font = ImageFont.truetype(str(FONT_PATH), round(14 * scale))
+    curve_width, radius = max(round(CURVE_WIDTH * scale), 1), 5 * scale
+    cursor_width, ring_width = max(round(scale), 1), max(round(2 * scale), 1)
 
     drawn = background.copy() # accumulates the curve: each frame only adds one segment to it
     drawn_draw = ImageDraw.Draw(drawn)
     for i in range(n_frames):
         index = min(i, len(entropy) - 1)
         if index > 0:
-            drawn_draw.line([points[index - 1], points[index]], fill=CURVE, width=CURVE_WIDTH, joint="curve")
+            drawn_draw.line([points[index - 1], points[index]], fill=CURVE, width=curve_width, joint="curve")
 
         frame = drawn.copy()
         draw = ImageDraw.Draw(frame)
         x, y = points[index]
-        draw.line([(x, plot_top), (x, plot_bottom)], fill=CURSOR, width=1)
-        draw.ellipse([x - 5, y - 5, x + 5, y + 5], fill=BACKGROUND, outline=CURSOR, width=2)
+        draw.line([(x, plot_top), (x, plot_bottom)], fill=CURSOR, width=cursor_width)
+        draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=BACKGROUND, outline=CURSOR, width=ring_width)
         readout = f"t = {seconds[index]:.1f} s de {duration:.1f} s  ·  S = {entropy[index]:.2f} nats"
         draw.text((width / 2, height * 0.88), readout, fill=TEXT, font=font, anchor="mm")
         yield frame.tobytes()

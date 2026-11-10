@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 const GROUPS = [
+    { title: "Vídeo", names: ["resolution"] },
     { title: "Deriva", names: ["vertical_gain", "horizontal_gain", "drift_tau"] },
     { title: "Agitação e fricção", names: ["sigma_min", "sigma_max", "friction_min", "friction_max"] },
     { title: "Ataques", names: ["onset_gain", "onset_threshold", "pulse_frames"] },
@@ -72,6 +73,31 @@ function HyperparameterRow({ spec, value, onChange, onReset, disabled }) {
 }
 
 
+// A choice among fixed options (like the resolution), as a row of buttons
+function OptionRow({ spec, value, onChange, onReset, disabled }) {
+    const changed = value !== spec.default;
+    return (
+        <div className={`hp-row${changed ? " hp-row-changed" : ""}`}>
+            <div className="hp-row-header">
+                <span className="hp-title" title={spec.description}>{spec.title}</span>
+                <button type="button" className="button-icon" onClick={onReset} disabled={disabled || !changed}
+                    title="Voltar ao padrão" aria-label={`Restaurar ${spec.title}`}>↺</button>
+            </div>
+            <div className="hp-options" role="radiogroup" aria-label={spec.title}>
+                {spec.options.map((option) => (
+                    <button key={option.value} type="button" role="radio" aria-checked={value === option.value}
+                        className={`hp-option${value === option.value ? " hp-option-selected" : ""}`}
+                        onClick={() => onChange(option.value)} disabled={disabled}>
+                        {option.label}
+                    </button>
+                ))}
+            </div>
+            <p className="hp-description">{spec.description}</p>
+        </div>
+    );
+}
+
+
 // Hyperparameter Panel component: a button opens sliders for each hyperparameter; values holds only the changed ones
 export function HyperparameterPanel({ specs, loadError, values, onChange, disabled }) {
     const [open, setOpen] = useState(false);
@@ -105,10 +131,11 @@ export function HyperparameterPanel({ specs, loadError, values, onChange, disabl
                     {grouped.filter((group) => group.specs.length).map((group) => (
                         <fieldset key={group.title} className="hp-group">
                             <legend>{group.title}</legend>
-                            {group.specs.map((spec) => (
-                                <HyperparameterRow key={spec.name} spec={spec} value={values[spec.name] ?? spec.default}
-                                    onChange={(value) => setValue(spec, value)} onReset={() => resetValue(spec)} disabled={disabled} />
-                            ))}
+                            {group.specs.map((spec) => {
+                                const Row = spec.options ? OptionRow : HyperparameterRow;
+                                return <Row key={spec.name} spec={spec} value={values[spec.name] ?? spec.default}
+                                    onChange={(value) => setValue(spec, value)} onReset={() => resetValue(spec)} disabled={disabled} />;
+                            })}
                         </fieldset>
                     ))}
                     {conflicts.map((message) => <p key={message} className="hp-warning">{message}</p>)}

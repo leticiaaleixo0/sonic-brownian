@@ -39,6 +39,10 @@ LIGHTNESS_RANGE = (0.55, 0.92) # lowest to highest centroid of the track
 CHROMA_RANGE = (0.07, 0.20) # quietest to loudest part of the track (grey in silence)
 HUE_SPREAD = 15 # fixed hue offset of each particle, up to ± this many degrees
 
+# Video (render.py): output height of each resolution; the simulation domain stays that of config/default.yaml
+VIDEO_HEIGHTS = {"low": 480, "medium": 720, "high": 1080}
+RESOLUTION = "low"
+
 # Particles (simulation.py, conditional_visualization.py)
 INITIAL_SPREAD = 0.1 # std of the initial cloud, as a share of the domain height
 TRAIL_DECAY = 0.9 # share of the trail kept from one frame to the next

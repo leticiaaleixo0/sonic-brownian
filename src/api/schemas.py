@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from src import hyperparameters as hp
 
 TaskStatus = Literal["queued", "running", "completed", "failed"]
+Resolution = Literal["low", "medium", "high"]
+RESOLUTION_NAMES = {"low": "Baixa", "medium": "Média", "high": "Alta"}
 
 
 class HealthResponse(BaseModel):
@@ -42,6 +44,7 @@ class Hyperparameters(BaseModel):
     """Hyperparameters the interface can change; title and description are the labels it shows."""
     model_config = ConfigDict(extra="forbid")
 
+    resolution: Resolution = Field(hp.RESOLUTION, title="Resolução do vídeo", description="Só a nitidez muda: o movimento é o mesmo nas três. Resoluções maiores demoram mais para renderizar.")
     vertical_gain: float = Field(hp.VERTICAL_GAIN, ge=0, le=5, title="Ganho vertical", description="Velocidade de subida/descida da nuvem quando o som fica mais agudo/grave (px/quadro).")
     horizontal_gain: float = Field(hp.HORIZONTAL_GAIN, ge=0, le=5, title="Ganho horizontal", description="Velocidade lateral da nuvem quando mudam agudos e graves (px/quadro).")
     drift_tau: float = Field(hp.DRIFT_TAU, ge=0.5, le=10, title="Memória da deriva", description="Segundos de passado recente com que o som é comparado para definir a deriva.")
@@ -70,11 +73,17 @@ class Hyperparameters(BaseModel):
         return {name.upper(): value for name, value in self.model_dump().items()}
 
 
+class HyperparameterOption(BaseModel):
+    value: str
+    label: str
+
+
 class HyperparameterSpec(BaseModel):
     name: str
     title: str
     description: str
-    type: Literal["integer", "number"]
-    default: float
-    minimum: float
-    maximum: float
+    type: Literal["integer", "number", "string"]
+    default: float | str
+    minimum: float | None = None
+    maximum: float | None = None
+    options: list[HyperparameterOption] | None = None

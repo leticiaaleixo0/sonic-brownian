@@ -97,7 +97,7 @@ data/audio/    faixas de teste e sinais sintéticos
 src/
   features.py    extração e normalização
   mapping.py     features → parâmetros físicos e cores
-  hyperparameters.py  ganhos, escalas, suavização, cor e rastro
+  hyperparameters.py  ganhos, escalas, suavização, cor, rastro e resolução do vídeo
   color.py       conversão OKLCH → sRGB
   simulation.py  passeio browniano condicionado
   fokker_planck.py  densidade da nuvem (Fokker–Planck) e entropia no tempo
@@ -123,7 +123,7 @@ python -m src.pipeline <caminho_da_musica>
 python -m src.pipeline <caminho_da_musica> --save_video
 ```
 
-Em Python: `run_pipeline(caminho, save_video=True)`, de `src/pipeline.py`. O vídeo é renderizado fora da tela, um quadro por quadro de features, com o mesmo desenho da pré-visualização com `n_particles_export` partículas.
+Em Python: `run_pipeline(caminho, save_video=True)`, de `src/pipeline.py`. O vídeo é renderizado fora da tela, um quadro por quadro de features, com o mesmo desenho da pré-visualização com `n_particles_export` partículas. A resolução do vídeo (`RESOLUTION` em `src/hyperparameters.py`: `low` 480p, `medium` 720p ou `high` 1080p, escolhível na interface) muda só o tamanho em que a nuvem é desenhada: a simulação e a entropia continuam no domínio `width`×`height` do `config/default.yaml`, então o movimento é o mesmo nas três.
 
 ### API
 

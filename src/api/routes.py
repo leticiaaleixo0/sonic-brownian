@@ -6,8 +6,9 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
+from src import hyperparameters as hp
 from src.api import services
-from src.api.schemas import EntropyResponse, HealthResponse, HyperparameterSpec, Hyperparameters, VideoResponse, VideoStatusResponse
+from src.api.schemas import RESOLUTION_NAMES, EntropyResponse, HealthResponse, HyperparameterOption, HyperparameterSpec, Hyperparameters, VideoResponse, VideoStatusResponse
 
 router = APIRouter(tags=["Sonic Brownian API"], prefix="/api")
 
@@ -36,9 +37,13 @@ def health_check() -> HealthResponse:
     summary="List the hyperparameters a video request can change, with their defaults and limits.",
 )
 def list_hyperparameters() -> list[HyperparameterSpec]:
-    properties = Hyperparameters.model_json_schema()["properties"]
-    return [HyperparameterSpec(name=name, **{key: spec[key] for key in HyperparameterSpec.model_fields if key != "name"})
-            for name, spec in properties.items()]
+    specs = []
+    for name, spec in Hyperparameters.model_json_schema()["properties"].items():
+        fields = {key: spec[key] for key in ("title", "description", "type", "default", "minimum", "maximum") if key in spec}
+        if name == "resolution":
+            fields["options"] = [HyperparameterOption(value=value, label=f"{RESOLUTION_NAMES[value]} ({hp.VIDEO_HEIGHTS[value]}p)") for value in spec["enum"]]
+        specs.append(HyperparameterSpec(name=name, **fields))
+    return specs
 
 
 @router.post(

@@ -10,8 +10,8 @@ n_fft: 2048                # janela da STFT (~93 ms)
 
 # Vídeo
 fps: 30
-width: 854
-height: 480
+width: 1140
+height: 604
 
 # Simulação
 n_particles_preview: 500

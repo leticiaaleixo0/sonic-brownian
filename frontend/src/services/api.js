@@ -62,3 +62,19 @@ export async function getVideoStatus(taskId) {
 export function videoFileUrl(taskId) {
     return `${API_URL}/api/videos/${taskId}/file`;
 }
+
+
+// Side-by-side video (particles | entropy), used in <a download>; it exists once the status says combined_status === "ready"
+export function combinedVideoUrl(taskId) {
+    return `${API_URL}/api/videos/${taskId}/combined`;
+}
+
+
+// Entropy of the particle cloud over time (Fokker–Planck): { task_id, fps, time: [s], entropy: [nats], max_entropy }
+export async function getEntropy(taskId) {
+    const response = await fetch(`${API_URL}/api/videos/${taskId}/entropy`);
+    if (!response.ok) {
+        throw new Error(await errorMessage(response, "Failed to get the entropy"));
+    }
+    return response.json();
+}

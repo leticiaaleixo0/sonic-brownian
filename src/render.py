@@ -24,7 +24,13 @@ DEFAULT_VIDEO_DIR = Path(__file__).resolve().parent.parent / "data" / "videos"
 VIDEO_QUALITY = 6 # imageio-ffmpeg scale from 1 to 10
 
 
-def export_video(audio_path, params, colors, output_path=None, config=None, n_particles=None, scale=1.0, hp=None):
+def video_size(width, height, video_height):
+    """(width, height) of the video: the domain's aspect ratio at video_height, both even as H.264 requires."""
+    video_height = 2 * round(video_height / 2)
+    return 2 * round(width * video_height / height / 2), video_height
+
+
+def export_video(audio_path, params, colors, output_path=None, config=None, n_particles=None, hp=None):
     """Render the cloud driven by params and colors (from mapping.py) to an MP4 with the audio of audio_path. Returns the video path."""
     config = config or load_config()
     hp = hp or resolve()
@@ -38,7 +44,7 @@ def export_video(audio_path, params, colors, output_path=None, config=None, n_pa
     velocities = np.zeros_like(positions)
     hue_offsets = np.random.default_rng(config.seed + 1).integers(-hp.HUE_SPREAD, hp.HUE_SPREAD + 1, len(positions))
 
-    size = (int(width * scale), int(height * scale))
+    size = video_size(width, height, hp.VIDEO_HEIGHTS[hp.RESOLUTION])
     trail = np.zeros((*size, 3), dtype=np.float32)
     writer = imageio_ffmpeg.write_frames(str(output_path), size, fps=config.fps, quality=VIDEO_QUALITY, macro_block_size=2, audio_path=str(audio_path), audio_codec="aac")
     writer.send(None)

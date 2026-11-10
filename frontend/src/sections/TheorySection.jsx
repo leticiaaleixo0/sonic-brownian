@@ -130,6 +130,35 @@ export function TheorySection() {
               </li>
             </ul>
           </section>
+
+          <section>
+            <h2>6. Entropia e Equação de Fokker–Planck</h2>
+            <p>
+              A equação de Langevin descreve cada partícula; a nuvem como um todo é descrita pela densidade
+              <InlineMath math="\rho(\mathbf{x}, t)" />, que obedece à equação de Fokker–Planck correspondente.
+              No limite superamortecido (parâmetros que variam devagar frente a <InlineMath math="1/\gamma" /> quadros), a deriva e a
+              difusão efetivas de cada quadro são <InlineMath math="\mu/\gamma" /> e <InlineMath math="D = \sigma^2 / 2\gamma^2" />:
+            </p>
+
+            <div className="math-block">
+              <BlockMath math="\frac{\partial \rho}{\partial t} = -\frac{\boldsymbol{\mu}}{\gamma} \cdot \nabla \rho + \frac{\sigma^2}{2\gamma^2} \nabla^2 \rho" />
+              <BlockMath math="S(t) = -\int \rho(\mathbf{x}, t) \, \ln \rho(\mathbf{x}, t) \, d^2x" />
+            </div>
+
+            <p>
+              A densidade inicial é estimada a partir das <InlineMath math="N" /> partículas iniciais (histograma suavizado por um núcleo gaussiano)
+              e evolui numa malha periódica, igual ao domínio toroidal da simulação. Como os coeficientes não dependem da posição, cada quadro tem
+              solução exata no espaço de Fourier: cada modo <InlineMath math="\mathbf{k}" /> é multiplicado por
+              <InlineMath math="e^{-i\mathbf{k}\cdot\boldsymbol{\mu}/\gamma \, - \, D|\mathbf{k}|^2}" />.
+              O impulso dos ataques dilata a densidade em torno do centro da nuvem, o que soma <InlineMath math="2\ln\lambda" /> à entropia
+              para um fator de dilatação <InlineMath math="\lambda" />, e o pulso negativo seguinte o desfaz.
+            </p>
+
+            <p>
+              A entropia é máxima, <InlineMath math="\ln(L_x L_y)" />, para a distribuição uniforme no quadro: sons fortes e ruidosos
+              espalham a nuvem e a aproximam desse teto, enquanto trechos calmos deixam a entropia estacionar ou, com deriva, só deslocar a nuvem.
+            </p>
+          </section>
         </main>
     );
 }

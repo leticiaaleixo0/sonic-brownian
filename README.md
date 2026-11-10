@@ -68,6 +68,23 @@ P(direita) = (1 + bₓ) / 2        P(esquerda) = (1 − bₓ) / 2
 
 No código, bₓ e b_y vêm de `compute_bias` (`src/mapping.py`) e viram a deriva μ = γ · G · b · presença, com G o ganho em px/quadro.
 
+### Entropia da nuvem (Fokker–Planck)
+
+A nuvem é descrita também pela densidade ρ(x, t), que obedece à equação de Fokker–Planck da equação de Langevin acima. No limite superamortecido, a cada quadro:
+
+```
+∂ρ/∂t = −(μ/γ)·∇ρ + D ∇²ρ,        D = σ² / (2γ²)        (domínio toroidal)
+S(t) = −∫ ρ ln ρ dA                                      (em nats; máximo ln(largura · altura))
+```
+
+`src/fokker_planck.py` estima ρ(x, 0) a partir das N partículas iniciais (as mesmas do vídeo) e a evolui numa malha periódica com os mesmos parâmetros por quadro de `mapping.py`. Como μ e D não dependem da posição, cada quadro tem solução exata no espaço de Fourier. O impulso dos ataques dilata ρ em torno do centro da nuvem (soma 2 ln λ à entropia) e o pulso negativo seguinte o desfaz. Aproximações: o limite superamortecido ignora a memória de velocidade (1/γ quadros) e o impulso age de uma vez, não ao longo de alguns quadros. `tests/test_fokker_planck.py` compara o resultado com o conjunto de partículas de Langevin.
+
+```python
+from src.pipeline import build_params, compute_entropy
+params, _ = build_params("data/audio/songs/faixa.wav")
+S = compute_entropy(params)    # S[i] é a entropia em t = i / fps
+```
+
 ## Stack
 
 Python com `librosa`, `numpy` e `scipy` (áudio e simulação), `pygame` (pré-visualização em tempo real), `imageio-ffmpeg` (exportação em vídeo), `matplotlib`, `pandas` e Jupyter (análise), FastAPI (API) e React com Vite (interface).
@@ -80,9 +97,10 @@ data/audio/    faixas de teste e sinais sintéticos
 src/
   features.py    extração e normalização
   mapping.py     features → parâmetros físicos e cores
-  hyperparameters.py  ganhos, escalas, suavização, cor e rastro
+  hyperparameters.py  ganhos, escalas, suavização, cor, rastro e resolução do vídeo
   color.py       conversão OKLCH → sRGB
   simulation.py  passeio browniano condicionado
+  fokker_planck.py  densidade da nuvem (Fokker–Planck) e entropia no tempo
   conditional_visualization.py  pré-visualização com o áudio tocando
   render.py      exportação em vídeo
   pipeline.py    áudio → features → simulação, na janela ou em MP4
@@ -105,7 +123,7 @@ python -m src.pipeline <caminho_da_musica>
 python -m src.pipeline <caminho_da_musica> --save_video
 ```
 
-Em Python: `run_pipeline(caminho, save_video=True)`, de `src/pipeline.py`. O vídeo é renderizado fora da tela, um quadro por quadro de features, com o mesmo desenho da pré-visualização com `n_particles_export` partículas.
+Em Python: `run_pipeline(caminho, save_video=True)`, de `src/pipeline.py`. O vídeo é renderizado fora da tela, um quadro por quadro de features, com o mesmo desenho da pré-visualização com `n_particles_export` partículas. A resolução do vídeo (`RESOLUTION` em `src/hyperparameters.py`: `low` 480p, `medium` 720p ou `high` 1080p, escolhível na interface) muda só o tamanho em que a nuvem é desenhada: a simulação e a entropia continuam no domínio `width`×`height` do `config/default.yaml`, então o movimento é o mesmo nas três.
 
 ### API
 
@@ -118,6 +136,7 @@ uvicorn src.api.main:app --reload    # documentação interativa em http://127.0
 | `POST /api/videos`               | envia o áudio (formulário com `audio` e, opcional, `n_particles` até 200 000) e devolve um `task_id` |
 | `GET /api/videos/{task_id}`      | estado da tarefa: `queued`, `running`, `completed` ou `failed` (com o erro) |
 | `GET /api/videos/{task_id}/file` | baixa o MP4 quando a tarefa termina |
+| `GET /api/videos/{task_id}/entropy` | entropia S(t) da nuvem ao longo da música (`time`, `entropy`, `max_entropy`), quando a tarefa termina |
 | `GET /api/health`                | verifica se a API está no ar |
 
 ### Interface (React + Vite)

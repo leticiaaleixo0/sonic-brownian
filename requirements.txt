@@ -10,6 +10,7 @@ pygame>=2.6
 # Exportação em vídeo (imageio-ffmpeg já traz um binário do ffmpeg)
 imageio>=2.35
 imageio-ffmpeg>=0.5
+pillow>=10.0  # quadros do gráfico de entropia no vídeo lado a lado
 
 # Configuração
 PyYAML>=6.0

@@ -16,7 +16,7 @@ body {
 }
 
 .paper-container {
-  max-width: 960px;
+  max-width: 1960px;
   margin: 0 auto;
   padding: 60px 30px;
   background-color: #0d1117;
@@ -377,7 +377,7 @@ code {
   font-size: 0.95rem;
 }
 
-.hp-row-changed label {
+.hp-row-changed label, .hp-row-changed .hp-title {
   color: #58a6ff;
   font-weight: 600;
 }
@@ -399,6 +399,41 @@ code {
   accent-color: #58a6ff;
 }
 
+.hp-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.hp-option {
+  margin: 0;
+  padding: 8px 6px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+}
+
+.hp-option:hover:not(:disabled) {
+  background-color: #21262d;
+}
+
+.hp-option-selected,
+.hp-option-selected:hover:not(:disabled) {
+  background-color: #1f6feb;
+  border-color: #58a6ff;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.hp-option-selected:disabled {
+  background-color: #1f3a66;
+  border-color: #1f6feb;
+  color: #c9d1d9;
+}
+
 .hp-description {
   color: #8b949e;
   font-size: 0.82rem;
@@ -409,6 +444,77 @@ code {
 .hp-warning {
   color: #d29922;
   font-size: 0.9rem;
+}
+
+/* Gráfico de entropia */
+.entropy-chart {
+  margin: 30px 0 0;
+  padding: 18px 18px 8px;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+}
+
+.entropy-chart figcaption {
+  font-size: 0.95rem;
+  color: #8b949e;
+  margin-bottom: 10px;
+}
+
+.entropy-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.entropy-grid {
+  stroke: #21262d;
+  stroke-width: 1;
+}
+
+.entropy-line {
+  fill: none;
+  stroke: #58a6ff;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.entropy-max {
+  stroke: #d29922;
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
+.entropy-max-label {
+  fill: #d29922;
+  font-size: 11px;
+}
+
+.entropy-playhead {
+  stroke: #c9d1d9;
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.entropy-marker {
+  fill: #0d1117;
+  stroke: #c9d1d9;
+  stroke-width: 2;
+}
+
+.entropy-tick,
+.entropy-axis-label {
+  fill: #8b949e;
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+}
+
+.entropy-readout {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #8b949e;
+  margin: 4px 0 8px;
+  text-align: center;
 }
 
 @media (max-width: 600px) {

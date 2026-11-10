@@ -10,6 +10,12 @@ Anderson Aquiles, Felipe Giehl, Letícia Aleixo — IMPA Tech, 2026.2
 
 O sistema recebe um arquivo de áudio e gera um vídeo de partículas sincronizado com a música. O movimento das partículas segue um **passeio browniano condicionado**: em vez de passos equiprováveis em todas as direções, as probabilidades de deslocamento, a velocidade e a aceleração dependem, quadro a quadro, das características extraídas do som (frequência, intensidade, timbre e ritmo).
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Nuvem de partículas azul que se espalha pela tela e passa para o verde, acompanhando o início de uma música" width="480">
+  <br>
+  <em>Os primeiros 10 s do vídeo gerado para "Can You Hear the Music" (Ludwig Göransson, trilha de Oppenheimer), com 1000 partículas.</em>
+</p>
+
 O projeto retoma uma tradição antiga de tornar o som visível, do *clavecin oculaire* de Castel às figuras de Chladni, usando ferramentas atuais de processamento de sinais e computação gráfica.
 
 ## Pipeline
@@ -65,7 +71,6 @@ src/
   render.py      exportação em vídeo
   pipeline.py    áudio → features → simulação, na janela ou em MP4
   api/           API HTTP (FastAPI): envio do áudio, acompanhamento e download do vídeo
-  evaluate.py    métricas de coerência
 frontend/      interface em React + Vite
 notebooks/     exploração e figuras
 tests/         testes do modelo
